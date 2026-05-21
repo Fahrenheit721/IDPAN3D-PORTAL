@@ -5,7 +5,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
-from streamlit_stl import stl_from_file  # NOUVEAU : Le module pour la 3D
+from streamlit_stl import stl_from_file
 
 # Configuration de la page
 st.set_page_config(page_title="IDPAN3D - Portail Client", page_icon="⚙️", layout="wide")
@@ -92,6 +92,7 @@ with col_left:
     
     volume_cm3 = 0
     dim_x = dim_y = dim_z = 0
+    is_printable = False  # NOUVEAU : Un verrou de sécurité pour le devis
     
     if uploaded_file is not None:
         with tempfile.NamedTemporaryFile(delete=False, suffix='.stl') as tmp_file:
@@ -99,26 +100,39 @@ with col_left:
             tmp_path = tmp_file.name
             
         try:
-            # 1. Analyse des dimensions
             stl_mesh = mesh.Mesh.from_file(tmp_path)
             volume_mm3 = stl_mesh.get_mass_properties()[0]
-            volume_cm3 = float(volume_mm3 / 1000.0)
+            volume_cm3_calc = float(volume_mm3 / 1000.0)
             minx, maxx = stl_mesh.x.min(), stl_mesh.x.max()
             miny, maxy = stl_mesh.y.min(), stl_mesh.y.max()
             minz, maxz = stl_mesh.z.min(), stl_mesh.z.max()
             dim_x, dim_y, dim_z = float(maxx - minx), float(maxy - miny), float(maxz - minz)
             
-            st.success(f"✅ Analyse réussie : {uploaded_file.name}")
-            st.info(f"**Dimensions :** {dim_x:.2f} x {dim_y:.2f} x {dim_z:.2f} mm\n\n**Volume matière :** {volume_cm3:.2f} cm³")
+            # ==========================================
+            # 📏 LE FILTRE DE DIMENSIONS PRUSA CORE ONE +
+            # ==========================================
+            # Dimensions max de votre machine : 250 x 220 x 270 mm
+            machine_limits = sorted([250.0, 220.0, 270.0])
+            part_dims = sorted([dim_x, dim_y, dim_z])
             
-            # 2. Affichage du fichier 3D en direct
+            # On vérifie si la plus petite dimension de la pièce rentre dans la plus petite dispo de la machine, etc.
+            if part_dims[0] > machine_limits[0] or part_dims[1] > machine_limits[1] or part_dims[2] > machine_limits[2]:
+                st.error("⚠️ **HORS DIMENSIONS** : Ce fichier dépasse la capacité de notre plus grande machine. Veuillez nous contacter directement au **06 78 22 57 76** pour une étude de découpe ou d'assemblage sur-mesure.")
+                volume_cm3 = 0 # On bloque volontairement le volume à zéro pour bloquer le prix
+            else:
+                is_printable = True
+                volume_cm3 = volume_cm3_calc
+                st.success(f"✅ Analyse réussie : {uploaded_file.name}")
+                st.info(f"**Dimensions :** {dim_x:.2f} x {dim_y:.2f} x {dim_z:.2f} mm\n\n**Volume matière :** {volume_cm3:.2f} cm³")
+            
+            # On affiche la pièce en 3D dans tous les cas
             st.write("🔍 **Aperçu interactif :**")
             stl_from_file(
                 file_path=tmp_path, 
-                color='#FFCC00',        # Le Jaune IDPAN3D
-                material='material',    # Brillance plastique
-                auto_rotate=True,       # Rotation automatique
-                height=300              # Hauteur du module
+                color='#FFCC00',        
+                material='material',    
+                auto_rotate=True,       
+                height=300              
             )
             
         except Exception as e:
@@ -141,8 +155,8 @@ with col_left:
     
     qual_dict = {
         "⚡ Rapide (0.28mm - Prototypes)": 1.0,
-        "📐 Standard (0.20mm - Industriel)": 1.0,
-        "🔍 Haute Fidélité (0.12mm - Précision)": 1.2
+        "📐 Standard (0.20mm - Industriel)": 1.2,
+        "🔍 Haute Fidélité (0.12mm - Précision)": 1.5
     }
     
     mat_choice = st.selectbox("Usage de la pièce (Matière)", list(mat_dict.keys()))
@@ -152,16 +166,30 @@ with col_left:
         qual_choice = st.selectbox("Qualité de finition", list(qual_dict.keys()))
     with col2b:
         qty = st.number_input("Quantité", min_value=1, value=1)
-    
-    final_price = 0.0
-    if volume_cm3 > 0:
-        base_price = 5 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
-        final_price = base_price * qty
 
 
 # ----------------- COLONNE DROITE (LE GUICHET DE PAIEMENT) -----------------
 with col_right:
-    st.subheader("3. Vos Coordonnées")
+    st.subheader("3. Mode de Livraison")
+    
+    fdp_dict = {
+        "📦 Retrait à l'atelier (Gratuit)": 0.00,
+        "🚚 Livraison Standard (Colissimo/Mondial Relay)": 6.90,
+        "⚡ Livraison Express (Chronopost 24h)": 12.90
+    }
+    
+    fdp_choice = st.selectbox("Sélectionnez votre mode de retrait", list(fdp_dict.keys()))
+    
+    st.write("")
+    
+    # --- CALCUL DU PRIX FINAL AVEC FDP ---
+    final_price = 0.0
+    if is_printable and volume_cm3 > 0:
+        base_price = 15 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
+        final_price = (base_price * qty) + fdp_dict[fdp_choice]
+
+    # --- COORDONNÉES ET VALIDATION ---
+    st.subheader("4. Vos Coordonnées")
     
     with st.form("client_form"):
         client_name = st.text_input("Nom complet ou Raison Sociale *")
@@ -174,15 +202,15 @@ with col_right:
         
         st.write("") 
         
-        if volume_cm3 > 0:
+        if is_printable and volume_cm3 > 0:
             st.markdown(f"<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>{final_price:.2f} € TTC</h1></div>", unsafe_allow_html=True)
         else:
             st.markdown("<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>0.00 € TTC</h1></div>", unsafe_allow_html=True)
         
         st.markdown("""
             <p style='font-size: 12px; color: #aaa; font-style: italic; text-align: center; margin-top: 12px; line-height: 1.4;'>
-                ⚠️ <b>Note importante :</b> Ce montant est donné à titre indicatif et fait office de simulation. 
-                Chaque fichier et configuration technique sont vérifiés en interne par l'équipe <b>IDPAN3D</b>. 
+                ⚠️ <b>Note importante :</b> Ce montant inclut les frais de port mais est donné à titre indicatif. 
+                Chaque fichier est vérifié en interne par l'équipe <b>IDPAN3D</b>. 
                 Vous recevrez une réponse définitive ainsi qu'un devis ferme sous 48 heures maximum.
             </p>
         """, unsafe_allow_html=True)
@@ -194,8 +222,11 @@ with col_right:
             clean_phone = client_phone.replace(" ", "").replace(".", "").replace("-", "")
             email_is_valid = re.match(r"[^@]+@[^@]+\.[^@]+", client_email)
 
-            if volume_cm3 == 0:
+            if not uploaded_file:
                 st.error("⚠️ Veuillez d'abord charger un fichier 3D.")
+            
+            elif not is_printable:
+                st.error("⚠️ Votre fichier est hors dimensions, le devis ne peut pas être soumis en ligne. Merci de nous appeler au 06 78 22 57 76.")
             
             elif not client_name.strip():
                 st.error("⚠️ Veuillez renseigner votre Nom ou Raison Sociale.")
@@ -232,7 +263,10 @@ with col_right:
                     - Qualité : {qual_choice}
                     - Quantité : {qty}
                     
-                    💰 PRIX ESTIMÉ : {final_price:.2f} € TTC
+                    📦 EXPÉDITION
+                    - Mode choisi : {fdp_choice}
+                    
+                    💰 PRIX ESTIMÉ (FDP Inclus) : {final_price:.2f} € TTC
                     """
                     
                     msg.attach(MIMEText(corps_email, 'plain', 'utf-8'))
