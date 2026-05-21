@@ -74,7 +74,7 @@ st.markdown("<h1 style='text-align: center; font-size: 4rem; color: #FFCC00;'>ID
 st.markdown("<p style='text-align: center; color: #888; text-transform: uppercase; letter-spacing: 2px;'>Portail Client · Devis & Production</p>", unsafe_allow_html=True)
 st.divider()
 
-# Création de 2 colonnes parfaitement réparties (La Technique à gauche, Le Guichet à droite)
+# Création de 2 colonnes parfaitement réparties
 col_left, col_right = st.columns(2, gap="large")
 
 # ----------------- COLONNE GAUCHE (TECHNIQUE) -----------------
@@ -105,7 +105,7 @@ with col_left:
         except Exception as e:
             st.error(f"Erreur de lecture du fichier STL : {e}")
 
-    st.write("") # Petit espace visuel
+    st.write("") 
     
     st.subheader("2. Cahier des Charges")
     mat_dict = {
@@ -128,7 +128,6 @@ with col_left:
     with col2b:
         qty = st.number_input("Quantité", min_value=1, value=1)
     
-    # Calcul du devis fantôme (utilisé dans la colonne de droite)
     final_price = 0.0
     if volume_cm3 > 0:
         base_price = 15 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
@@ -139,7 +138,6 @@ with col_left:
 with col_right:
     st.subheader("3. Vos Coordonnées")
     
-    # Tout est regroupé dans le formulaire pour un bel alignement
     with st.form("client_form"):
         client_name = st.text_input("Nom complet ou Raison Sociale *")
         
@@ -149,15 +147,24 @@ with col_right:
         with col_phone:
             client_phone = st.text_input("Téléphone")
         
-        st.write("") # Espace
+        st.write("") 
         
-        # Le devis est affiché juste au-dessus du bouton de validation
+        # Affichage du devis indicatif
         if volume_cm3 > 0:
             st.markdown(f"<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>{final_price:.2f} € HT</h1></div>", unsafe_allow_html=True)
         else:
-            st.markdown("<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>0.00 € HT</h1><small style='color: #111;'>Chargez un fichier 3D pour simuler le prix</small></div>", unsafe_allow_html=True)
+            st.markdown("<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>0.00 € HT</h1></div>", unsafe_allow_html=True)
         
-        st.write("") # Espace
+        # --- BLOC DE TEXTE INFORMATIF SOUHAITÉ ---
+        st.markdown("""
+            <p style='font-size: 12px; color: #aaa; font-style: italic; text-align: center; margin-top: 12px; line-height: 1.4;'>
+                ⚠️ <b>Note importante :</b> Ce montant est donné à titre indicatif et fait office de simulation. 
+                Chaque fichier et configuration technique sont vérifiés en interne par l'équipe <b>IDPAN3D</b>. 
+                Vous recevrez une réponse définitive ainsi qu'un devis ferme sous 48 heures maximum.
+            </p>
+        """, unsafe_allow_html=True)
+        
+        st.write("") 
         submitted = st.form_submit_button("Envoyer le projet à l'atelier")
         
         if submitted:
