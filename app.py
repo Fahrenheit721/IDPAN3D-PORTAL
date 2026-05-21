@@ -130,8 +130,8 @@ with col_left:
     
     qual_dict = {
         "⚡ Rapide (0.28mm - Prototypes)": 1.0,
-        "📐 Standard (0.20mm - Industriel)": 1.2,
-        "🔍 Haute Fidélité (0.12mm - Précision)": 1.5
+        "📐 Standard (0.20mm - Industriel)": 1.1,
+        "🔍 Haute Fidélité (0.12mm - Précision)": 1.2
     }
     
     mat_choice = st.selectbox("Usage de la pièce (Matière)", list(mat_dict.keys()))
@@ -144,7 +144,7 @@ with col_left:
     
     final_price = 0.0
     if volume_cm3 > 0:
-        base_price = 15 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
+        base_price = 10 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
         final_price = base_price * qty
 
 
