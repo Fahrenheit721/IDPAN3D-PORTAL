@@ -8,49 +8,108 @@ from email.mime.multipart import MIMEMultipart
 # Configuration de la page
 st.set_page_config(page_title="IDPAN3D - Portail Client", page_icon="⚙️", layout="wide")
 
-# CSS Personnalisé pour garder l'identité Noir et Jaune
+# ==========================================
+# 🎨 LE PACK DESIGN IDPAN3D (CSS FORCE)
+# ==========================================
 st.markdown("""
     <style>
-        .stApp { background-color: #111111; color: #ffffff; }
-        h1, h2, h3 { color: #FFCC00; font-family: 'Arial', sans-serif; }
-        .stButton>button { background-color: #FFCC00; color: #111111; font-weight: bold; width: 100%; border: none; }
-        .stButton>button:hover { background-color: #ffffff; color: #111111; }
-        .price-box { background-color: #FFCC00; color: #111111; padding: 20px; border-radius: 8px; text-align: center; }
+        /* Importation de la police Lobster depuis Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
+
+        /* Fond noir et texte blanc pour toute l'application */
+        .stApp { 
+            background-color: #111111; 
+            color: #ffffff; 
+        }
+
+        /* On force la police Lobster sur tous les titres */
+        h1, h2, h3 { 
+            font-family: 'Lobster', cursive !important; 
+            color: #FFCC00 !important; 
+            letter-spacing: 1px;
+            font-weight: normal;
+        }
+
+        /* Style des boutons (Jaune IDPAN) */
+        .stButton>button { 
+            background-color: #FFCC00; 
+            color: #111111; 
+            font-weight: bold; 
+            width: 100%; 
+            border: none; 
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+        .stButton>button:hover { 
+            background-color: #ffffff; 
+            color: #111111; 
+        }
+
+        /* Boîte de prix stylisée */
+        .price-box { 
+            background-color: #FFCC00; 
+            color: #111111; 
+            padding: 20px; 
+            border-radius: 8px; 
+            text-align: center; 
+            box-shadow: 0 4px 15px rgba(255,204,0,0.2);
+        }
+        /* Pour que les chiffres du prix restent lisibles, on annule le Lobster ici */
+        .price-box h1, .price-box h3 {
+            font-family: 'Arial', sans-serif !important;
+            color: #111111 !important;
+            margin: 0;
+        }
+
+        /* Assombrir les zones de saisie pour coller au thème sombre */
+        .stTextInput input, .stNumberInput input {
+            background-color: #222222 !important;
+            color: #ffffff !important;
+            border: 1px solid #444444 !important;
+        }
+        div[data-baseweb="select"] > div {
+            background-color: #222222 !important;
+            color: #ffffff !important;
+            border: 1px solid #444444 !important;
+        }
+        
+        /* Cacher la barre du haut de Streamlit pour faire plus pro */
+        #MainMenu {visibility: hidden;}
+        header {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
+# ==========================================
+# 🚀 LE CONTENU DE L'APPLICATION
+# ==========================================
+
 # Titre Principal
-st.markdown("<h1 style='text-align: center; font-size: 3rem;'>IDPAN3D PORTAL</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #888;'>Devis et Production d'Impression 3D</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; font-size: 4rem; color: #FFCC00;'>IDPAN3D</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #888; text-transform: uppercase; letter-spacing: 2px;'>Portail Client · Devis & Production</p>", unsafe_allow_html=True)
 st.divider()
 
 # Création des deux colonnes
 col1, col2 = st.columns(2, gap="large")
 
 with col1:
-    st.subheader("1. Analyse du Fichier 3D")
+    st.subheader("1. Fichier 3D")
     uploaded_file = st.file_uploader("Glissez votre fichier .STL ici", type=['stl'])
     
     volume_cm3 = 0
     dim_x = dim_y = dim_z = 0
     
     if uploaded_file is not None:
-        # Streamlit a besoin de sauvegarder le fichier temporairement pour que numpy-stl le lise
         with tempfile.NamedTemporaryFile(delete=False, suffix='.stl') as tmp_file:
             tmp_file.write(uploaded_file.getvalue())
             tmp_path = tmp_file.name
             
         try:
             stl_mesh = mesh.Mesh.from_file(tmp_path)
-            
-            # Calcul du volume et dimensions
             volume_mm3 = stl_mesh.get_mass_properties()[0]
             volume_cm3 = float(volume_mm3 / 1000.0)
-            
             minx, maxx = stl_mesh.x.min(), stl_mesh.x.max()
             miny, maxy = stl_mesh.y.min(), stl_mesh.y.max()
             minz, maxz = stl_mesh.z.min(), stl_mesh.z.max()
-            
             dim_x, dim_y, dim_z = float(maxx - minx), float(maxy - miny), float(maxz - minz)
             
             st.success(f"✅ Analyse réussie : {uploaded_file.name}")
@@ -62,7 +121,6 @@ with col1:
 with col2:
     st.subheader("2. Cahier des Charges")
     
-    # Dictionnaires pour les prix
     mat_dict = {
         "🏠 Décoration / Maquette (PLA)": 0.15,
         "☀️ Extérieur / UV (ASA)": 0.25,
@@ -76,25 +134,35 @@ with col2:
     }
     
     mat_choice = st.selectbox("Usage de la pièce (Matière)", list(mat_dict.keys()))
-    qual_choice = st.selectbox("Qualité de finition", list(qual_dict.keys()))
-    qty = st.number_input("Quantité", min_value=1, value=1)
+    
+    # Mettre la qualité et la quantité sur la même ligne
+    col2a, col2b = st.columns([2, 1])
+    with col2a:
+        qual_choice = st.selectbox("Qualité de finition", list(qual_dict.keys()))
+    with col2b:
+        qty = st.number_input("Quantité", min_value=1, value=1)
     
     # Calcul du devis
     if volume_cm3 > 0:
         base_price = 15 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
         final_price = base_price * qty
-        st.markdown(f"<div class='price-box'><h3>Estimation</h3><h1 style='color: #111;'>{final_price:.2f} € HT</h1></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>{final_price:.2f} € HT</h1></div>", unsafe_allow_html=True)
     else:
-        st.markdown("<div class='price-box'><h3>Estimation</h3><h1 style='color: #111;'>0.00 € HT</h1><small>Chargez un fichier STL</small></div>", unsafe_allow_html=True)
+        st.markdown("<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>0.00 € HT</h1></div>", unsafe_allow_html=True)
     
-    st.divider()
+    st.write("") # Petit espace
     
     # Formulaire Client
     with st.form("client_form"):
         st.subheader("3. Vos Coordonnées")
         client_name = st.text_input("Nom complet ou Raison Sociale *")
-        client_email = st.text_input("Adresse E-mail *")
-        client_phone = st.text_input("Téléphone")
+        
+        # Email et téléphone sur la même ligne
+        col_email, col_phone = st.columns(2)
+        with col_email:
+            client_email = st.text_input("Adresse E-mail *")
+        with col_phone:
+            client_phone = st.text_input("Téléphone")
         
         submitted = st.form_submit_button("Envoyer le projet à l'atelier")
         
@@ -104,7 +172,6 @@ with col2:
             elif not client_name or not client_email:
                 st.error("⚠️ Veuillez remplir votre Nom et votre E-mail.")
             else:
-                # Envoi de l'e-mail avec st.secrets
                 try:
                     msg = MIMEMultipart()
                     msg['From'] = st.secrets["SMTP_EMAIL"]
