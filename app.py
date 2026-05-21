@@ -4,7 +4,7 @@ from stl import mesh
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import re  # NOUVEAU : Module pour vérifier la forme des textes (email, téléphone)
+import re
 
 # Configuration de la page
 st.set_page_config(page_title="IDPAN3D - Portail Client", page_icon="⚙️", layout="wide")
@@ -112,7 +112,9 @@ with col_left:
         except Exception as e:
             st.error(f"Erreur de lecture du fichier STL : {e}")
 
-st.subheader("2. Cahier des Charges")
+    st.write("") 
+    
+    st.subheader("2. Cahier des Charges")
     
     # NOUVEAU MENU DES MATIÈRES
     mat_dict = {
@@ -157,11 +159,11 @@ with col_right:
         with col_email:
             client_email = st.text_input("Adresse E-mail *")
         with col_phone:
-            # J'ai rajouté l'étoile pour rendre le téléphone obligatoire
             client_phone = st.text_input("Téléphone *") 
         
         st.write("") 
         
+        # Affichage du devis TTC
         if volume_cm3 > 0:
             st.markdown(f"<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>{final_price:.2f} € TTC</h1></div>", unsafe_allow_html=True)
         else:
@@ -182,10 +184,7 @@ with col_right:
         # 🛡️ LE BOUCLIER DE VÉRIFICATION
         # ==========================================
         if submitted:
-            # 1. Nettoyage du téléphone (on enlève les espaces, points, tirets pour ne garder que les chiffres)
             clean_phone = client_phone.replace(" ", "").replace(".", "").replace("-", "")
-            
-            # 2. Vérification de l'e-mail via une expression régulière
             email_is_valid = re.match(r"[^@]+@[^@]+\.[^@]+", client_email)
 
             if volume_cm3 == 0:
@@ -201,11 +200,9 @@ with col_right:
                 st.error("⚠️ Le numéro de téléphone doit contenir exactement 10 chiffres.")
                 
             elif len(set(clean_phone)) == 1 or clean_phone in ["1234567890", "0123456789"]:
-                # set() regroupe les caractères uniques. S'il n'y en a qu'un, c'est que tous les chiffres sont identiques (ex: 0000000000)
                 st.error("⚠️ Le numéro de téléphone saisi n'est pas valide.")
                 
             else:
-                # Tout est parfait, on envoie l'e-mail !
                 try:
                     msg = MIMEMultipart()
                     msg['From'] = st.secrets["SMTP_EMAIL"]
