@@ -5,6 +5,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
+from streamlit_stl import stl_from_file  # NOUVEAU : Le module pour la 3D
 
 # Configuration de la page
 st.set_page_config(page_title="IDPAN3D - Portail Client", page_icon="⚙️", layout="wide")
@@ -77,7 +78,7 @@ st.divider()
 
 col_left, col_right = st.columns(2, gap="large")
 
-# ----------------- COLONNE GAUCHE (TECHNIQUE) -----------------
+# ----------------- COLONNE GAUCHE (TECHNIQUE & 3D) -----------------
 with col_left:
     st.subheader("1. Fichier 3D")
     uploaded_file = st.file_uploader("Glissez votre fichier .STL ici", type=['stl'])
@@ -98,6 +99,7 @@ with col_left:
             tmp_path = tmp_file.name
             
         try:
+            # 1. Analyse des dimensions
             stl_mesh = mesh.Mesh.from_file(tmp_path)
             volume_mm3 = stl_mesh.get_mass_properties()[0]
             volume_cm3 = float(volume_mm3 / 1000.0)
@@ -109,6 +111,16 @@ with col_left:
             st.success(f"✅ Analyse réussie : {uploaded_file.name}")
             st.info(f"**Dimensions :** {dim_x:.2f} x {dim_y:.2f} x {dim_z:.2f} mm\n\n**Volume matière :** {volume_cm3:.2f} cm³")
             
+            # 2. Affichage du fichier 3D en direct
+            st.write("🔍 **Aperçu interactif :**")
+            stl_from_file(
+                file_path=tmp_path, 
+                color='#FFCC00',        # Le Jaune IDPAN3D
+                material='material',    # Brillance plastique
+                auto_rotate=True,       # Rotation automatique
+                height=300              # Hauteur du module
+            )
+            
         except Exception as e:
             st.error(f"Erreur de lecture du fichier STL : {e}")
 
@@ -116,7 +128,6 @@ with col_left:
     
     st.subheader("2. Cahier des Charges")
     
-    # NOUVEAU MENU DES MATIÈRES
     mat_dict = {
         "🟢 STANDARD - Décoration / Maquette (PLA)": 0.15,
         "🟢 STANDARD - Mécanique / Étanchéité (PETG)": 0.18,
@@ -130,8 +141,8 @@ with col_left:
     
     qual_dict = {
         "⚡ Rapide (0.28mm - Prototypes)": 1.0,
-        "📐 Standard (0.20mm - Industriel)": 1.1,
-        "🔍 Haute Fidélité (0.12mm - Précision)": 1.2
+        "📐 Standard (0.20mm - Industriel)": 1.2,
+        "🔍 Haute Fidélité (0.12mm - Précision)": 1.5
     }
     
     mat_choice = st.selectbox("Usage de la pièce (Matière)", list(mat_dict.keys()))
@@ -144,11 +155,11 @@ with col_left:
     
     final_price = 0.0
     if volume_cm3 > 0:
-        base_price = 10 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
+        base_price = 15 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
         final_price = base_price * qty
 
 
-# ----------------- COLONNE DROITE (LE GUICHET) -----------------
+# ----------------- COLONNE DROITE (LE GUICHET DE PAIEMENT) -----------------
 with col_right:
     st.subheader("3. Vos Coordonnées")
     
@@ -163,7 +174,6 @@ with col_right:
         
         st.write("") 
         
-        # Affichage du devis TTC
         if volume_cm3 > 0:
             st.markdown(f"<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>{final_price:.2f} € TTC</h1></div>", unsafe_allow_html=True)
         else:
@@ -180,9 +190,6 @@ with col_right:
         st.write("") 
         submitted = st.form_submit_button("Envoyer le projet à l'atelier")
         
-        # ==========================================
-        # 🛡️ LE BOUCLIER DE VÉRIFICATION
-        # ==========================================
         if submitted:
             clean_phone = client_phone.replace(" ", "").replace(".", "").replace("-", "")
             email_is_valid = re.match(r"[^@]+@[^@]+\.[^@]+", client_email)
