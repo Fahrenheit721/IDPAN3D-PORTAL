@@ -122,7 +122,7 @@ with col2:
     st.subheader("2. Cahier des Charges")
     
     mat_dict = {
-        "🏠 Décoration / Maquette (PLA)": 0.15,
+        "🏠 Décoration / Maquette et Prototypes (PLA)": 0.15,
         "☀️ Extérieur / UV (ASA)": 0.25,
         "⚙️ Mécanique / Robuste (PETG-CF)": 0.30,
         "👟 Souple / Articulé (TPU)": 0.35
