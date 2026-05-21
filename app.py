@@ -112,15 +112,20 @@ with col_left:
         except Exception as e:
             st.error(f"Erreur de lecture du fichier STL : {e}")
 
-    st.write("") 
+st.subheader("2. Cahier des Charges")
     
-    st.subheader("2. Cahier des Charges")
+    # NOUVEAU MENU DES MATIÈRES
     mat_dict = {
-        "🏠 Décoration / Maquette (PLA)": 0.15,
-        "☀️ Extérieur / UV (ASA)": 0.25,
-        "⚙️ Mécanique / Robuste (PETG-CF)": 0.30,
-        "👟 Souple / Articulé (TPU)": 0.35
+        "🟢 STANDARD - Décoration / Maquette (PLA)": 0.15,
+        "🟢 STANDARD - Mécanique / Étanchéité (PETG)": 0.18,
+        "🟠 TECHNIQUE - Pièce mécanique / Chaleur (ABS)": 0.20,
+        "🟠 TECHNIQUE - Extérieur / Résistance UV (ASA)": 0.25,
+        "🔵 SPÉCIAL - Pièce souple / Amortisseur (TPU)": 0.35,
+        "⚫ EXTRÊME - Aspect Mat premium / Rigide (PLA-CF)": 0.25,
+        "⚫ EXTRÊME - Haute rigidité industrielle (PETG-CF)": 0.30,
+        "⚫ EXTRÊME - Pièce Automobile / Haute Temp (ABS-CF)": 0.40
     }
+    
     qual_dict = {
         "⚡ Rapide (0.28mm - Prototypes)": 1.0,
         "📐 Standard (0.20mm - Industriel)": 1.2,
