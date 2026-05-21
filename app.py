@@ -137,4 +137,83 @@ with col_left:
         qty = st.number_input("Quantité", min_value=1, value=1)
     
     final_price = 0.0
-    if volume_cm3 > 0
+    if volume_cm3 > 0:
+        base_price = 15 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
+        final_price = base_price * qty
+
+
+# ----------------- COLONNE DROITE (LE GUICHET) -----------------
+with col_right:
+    st.subheader("3. Vos Coordonnées")
+    
+    with st.form("client_form"):
+        client_name = st.text_input("Nom complet ou Raison Sociale *")
+        
+        col_email, col_phone = st.columns(2)
+        with col_email:
+            client_email = st.text_input("Adresse E-mail *")
+        with col_phone:
+            client_phone = st.text_input("Téléphone")
+        
+        st.write("") 
+        
+        # Affichage du devis en TTC
+        if volume_cm3 > 0:
+            st.markdown(f"<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>{final_price:.2f} € TTC</h1></div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>0.00 € TTC</h1></div>", unsafe_allow_html=True)
+        
+        # Bloc de texte informatif
+        st.markdown("""
+            <p style='font-size: 12px; color: #aaa; font-style: italic; text-align: center; margin-top: 12px; line-height: 1.4;'>
+                ⚠️ <b>Note importante :</b> Ce montant est donné à titre indicatif et fait office de simulation. 
+                Chaque fichier et configuration technique sont vérifiés en interne par l'équipe <b>IDPAN3D</b>. 
+                Vous recevrez une réponse définitive ainsi qu'un devis ferme sous 48 heures maximum.
+            </p>
+        """, unsafe_allow_html=True)
+        
+        st.write("") 
+        submitted = st.form_submit_button("Envoyer le projet à l'atelier")
+        
+        if submitted:
+            if volume_cm3 == 0:
+                st.error("⚠️ Veuillez d'abord charger un fichier 3D.")
+            elif not client_name or not client_email:
+                st.error("⚠️ Veuillez remplir votre Nom et votre E-mail.")
+            else:
+                try:
+                    msg = MIMEMultipart()
+                    msg['From'] = st.secrets["SMTP_EMAIL"]
+                    msg['To'] = st.secrets["RECEIVER_EMAIL"]
+                    msg['Subject'] = f"🆕 Projet 3D - {client_name}"
+                    
+                    corps_email = f"""
+                    Nouvelle demande sur IDPAN3D Portal :
+                    
+                    👤 CLIENT
+                    - Nom : {client_name}
+                    - Email : {client_email}
+                    - Tél : {client_phone}
+                    
+                    ⚙️ TECHNIQUE
+                    - Fichier : {uploaded_file.name}
+                    - Dimensions : {dim_x:.2f} x {dim_y:.2f} x {dim_z:.2f} mm
+                    - Volume : {volume_cm3:.2f} cm3
+                    - Matière : {mat_choice}
+                    - Qualité : {qual_choice}
+                    - Quantité : {qty}
+                    
+                    💰 PRIX ESTIMÉ : {final_price:.2f} € TTC
+                    """
+                    
+                    msg.attach(MIMEText(corps_email, 'plain', 'utf-8'))
+                    
+                    server = smtplib.SMTP(st.secrets["SMTP_SERVER"], st.secrets["SMTP_PORT"])
+                    server.starttls()
+                    server.login(st.secrets["SMTP_EMAIL"], st.secrets["SMTP_PASSWORD"])
+                    server.sendmail(st.secrets["SMTP_EMAIL"], st.secrets["RECEIVER_EMAIL"], msg.as_string())
+                    server.quit()
+                    
+                    st.success("✅ Parfait ! Votre demande a été transmise directement à l'atelier IDPAN3D.")
+                except Exception as e:
+                    st.error(f"❌ Erreur lors de l'envoi de l'e-mail. Vérifiez vos st.secrets. Erreur: {e}")
