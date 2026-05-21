@@ -155,8 +155,8 @@ with col_left:
     
     qual_dict = {
         "⚡ Rapide (0.28mm - Prototypes)": 1.0,
-        "📐 Standard (0.20mm - Industriel)": 1.2,
-        "🔍 Haute Fidélité (0.12mm - Précision)": 1.5
+        "📐 Standard (0.20mm - Industriel)": 1.0,
+        "🔍 Haute Fidélité (0.12mm - Précision)": 1.2
     }
     
     mat_choice = st.selectbox("Usage de la pièce (Matière)", list(mat_dict.keys()))
@@ -185,7 +185,7 @@ with col_right:
     # --- CALCUL DU PRIX FINAL AVEC FDP ---
     final_price = 0.0
     if is_printable and volume_cm3 > 0:
-        base_price = 15 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
+        base_price = 5 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
         final_price = (base_price * qty) + fdp_dict[fdp_choice]
 
     # --- COORDONNÉES ET VALIDATION ---
