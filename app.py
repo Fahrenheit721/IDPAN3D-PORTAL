@@ -13,16 +13,10 @@ st.set_page_config(page_title="IDPAN3D - Portail Client", page_icon="⚙️", la
 # ==========================================
 st.markdown("""
     <style>
-        /* Importation de la police Lobster depuis Google Fonts */
         @import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
 
-        /* Fond noir et texte blanc pour toute l'application */
-        .stApp { 
-            background-color: #111111; 
-            color: #ffffff; 
-        }
+        .stApp { background-color: #111111; color: #ffffff; }
 
-        /* On force la police Lobster sur tous les titres */
         h1, h2, h3 { 
             font-family: 'Lobster', cursive !important; 
             color: #FFCC00 !important; 
@@ -30,7 +24,6 @@ st.markdown("""
             font-weight: normal;
         }
 
-        /* Style des boutons (Jaune IDPAN) */
         .stButton>button { 
             background-color: #FFCC00; 
             color: #111111; 
@@ -40,12 +33,8 @@ st.markdown("""
             text-transform: uppercase;
             transition: all 0.3s ease;
         }
-        .stButton>button:hover { 
-            background-color: #ffffff; 
-            color: #111111; 
-        }
+        .stButton>button:hover { background-color: #ffffff; color: #111111; }
 
-        /* Boîte de prix stylisée */
         .price-box { 
             background-color: #FFCC00; 
             color: #111111; 
@@ -54,14 +43,13 @@ st.markdown("""
             text-align: center; 
             box-shadow: 0 4px 15px rgba(255,204,0,0.2);
         }
-        /* Pour que les chiffres du prix restent lisibles, on annule le Lobster ici */
+        
         .price-box h1, .price-box h3 {
             font-family: 'Arial', sans-serif !important;
             color: #111111 !important;
             margin: 0;
         }
 
-        /* Assombrir les zones de saisie pour coller au thème sombre */
         .stTextInput input, .stNumberInput input {
             background-color: #222222 !important;
             color: #ffffff !important;
@@ -73,7 +61,6 @@ st.markdown("""
             border: 1px solid #444444 !important;
         }
         
-        /* Cacher la barre du haut de Streamlit pour faire plus pro */
         #MainMenu {visibility: hidden;}
         header {visibility: hidden;}
     </style>
@@ -83,15 +70,15 @@ st.markdown("""
 # 🚀 LE CONTENU DE L'APPLICATION
 # ==========================================
 
-# Titre Principal
 st.markdown("<h1 style='text-align: center; font-size: 4rem; color: #FFCC00;'>IDPAN3D</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #888; text-transform: uppercase; letter-spacing: 2px;'>Portail Client · Devis & Production</p>", unsafe_allow_html=True)
 st.divider()
 
-# Création des deux colonnes
-col1, col2 = st.columns(2, gap="large")
+# Création de 2 colonnes parfaitement réparties (La Technique à gauche, Le Guichet à droite)
+col_left, col_right = st.columns(2, gap="large")
 
-with col1:
+# ----------------- COLONNE GAUCHE (TECHNIQUE) -----------------
+with col_left:
     st.subheader("1. Fichier 3D")
     uploaded_file = st.file_uploader("Glissez votre fichier .STL ici", type=['stl'])
     
@@ -118,11 +105,11 @@ with col1:
         except Exception as e:
             st.error(f"Erreur de lecture du fichier STL : {e}")
 
-with col2:
-    st.subheader("2. Cahier des Charges")
+    st.write("") # Petit espace visuel
     
+    st.subheader("2. Cahier des Charges")
     mat_dict = {
-        "🏠 Décoration / Maquette et Prototypes (PLA)": 0.15,
+        "🏠 Décoration / Maquette (PLA)": 0.15,
         "☀️ Extérieur / UV (ASA)": 0.25,
         "⚙️ Mécanique / Robuste (PETG-CF)": 0.30,
         "👟 Souple / Articulé (TPU)": 0.35
@@ -135,35 +122,42 @@ with col2:
     
     mat_choice = st.selectbox("Usage de la pièce (Matière)", list(mat_dict.keys()))
     
-    # Mettre la qualité et la quantité sur la même ligne
     col2a, col2b = st.columns([2, 1])
     with col2a:
         qual_choice = st.selectbox("Qualité de finition", list(qual_dict.keys()))
     with col2b:
         qty = st.number_input("Quantité", min_value=1, value=1)
     
-    # Calcul du devis
+    # Calcul du devis fantôme (utilisé dans la colonne de droite)
+    final_price = 0.0
     if volume_cm3 > 0:
         base_price = 15 + (volume_cm3 * mat_dict[mat_choice] * qual_dict[qual_choice])
         final_price = base_price * qty
-        st.markdown(f"<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>{final_price:.2f} € HT</h1></div>", unsafe_allow_html=True)
-    else:
-        st.markdown("<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>0.00 € HT</h1></div>", unsafe_allow_html=True)
+
+
+# ----------------- COLONNE DROITE (LE GUICHET) -----------------
+with col_right:
+    st.subheader("3. Vos Coordonnées")
     
-    st.write("") # Petit espace
-    
-    # Formulaire Client
+    # Tout est regroupé dans le formulaire pour un bel alignement
     with st.form("client_form"):
-        st.subheader("3. Vos Coordonnées")
         client_name = st.text_input("Nom complet ou Raison Sociale *")
         
-        # Email et téléphone sur la même ligne
         col_email, col_phone = st.columns(2)
         with col_email:
             client_email = st.text_input("Adresse E-mail *")
         with col_phone:
             client_phone = st.text_input("Téléphone")
         
+        st.write("") # Espace
+        
+        # Le devis est affiché juste au-dessus du bouton de validation
+        if volume_cm3 > 0:
+            st.markdown(f"<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>{final_price:.2f} € HT</h1></div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div class='price-box'><h3 style='font-size: 14px; text-transform: uppercase;'>Estimation Instantanée</h3><h1 style='font-size: 38px;'>0.00 € HT</h1><small style='color: #111;'>Chargez un fichier 3D pour simuler le prix</small></div>", unsafe_allow_html=True)
+        
+        st.write("") # Espace
         submitted = st.form_submit_button("Envoyer le projet à l'atelier")
         
         if submitted:
